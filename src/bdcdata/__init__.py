@@ -24,7 +24,7 @@ import logging
 # writes a log file.
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-from . import lookups  # noqa: E402
+from . import availability, catalog, challenges, funding, lookups  # noqa: E402
 from ._cache import cache_info, clear_cache  # noqa: E402
 from ._client import check_credentials, reset_session  # noqa: E402
 from .config import get_cache_settings, set_base_url, set_cache, set_timeout  # noqa: E402
@@ -56,6 +56,10 @@ except PackageNotFoundError:  # pragma: no cover - running from a bare checkout
 __all__ = [
     "__version__",
     # submodules
+    "availability",
+    "catalog",
+    "challenges",
+    "funding",
     "lookups",
     # credentials
     "set_credentials",
