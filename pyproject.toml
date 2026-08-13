@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bdcdata"
+dynamic = ["version"]
+description = "Work with FCC Broadband Data Collection (BDC) data in pandas."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+authors = [
+  { name = "W. Nick Pappin", email = "nick.pappin@wsu.edu" },
+]
+maintainers = [
+  { name = "W. Nick Pappin", email = "npappin@gmail.com" },
+]
+keywords = ["fcc", "broadband", "bdc", "national broadband map", "pandas"]
+dependencies = [
+  "requests>=2.28",
+  "pandas>=2",
+  "pyarrow>=12",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+# Reading the mobile H3 coverage files means opening an ESRI Shapefile /
+# GeoPackage. pyogrio bundles GDAL, so it stays optional -- users who only
+# touch CSV products should not pay for it.
+mobile = ["pyogrio>=0.7"]
+dotenv = ["python-dotenv>=1.0"]
+progress = ["tqdm>=4.60"]
+all = ["bdcdata[mobile,dotenv,progress]"]
+
+[project.urls]
+Homepage = "https://github.com/npappin/bdcdata"
+Documentation = "https://github.com/npappin/bdcdata/tree/main/docs"
+Issues = "https://github.com/npappin/bdcdata/issues"
+
+[dependency-groups]
+dev = [
+  "pytest>=7.4",
+  "responses>=0.24",
+  "ruff>=0.6",
+  "mypy>=1.8",
+  "pandas-stubs",
+  "types-requests",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bdcdata"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  "SIM108",  # ternaries are not always the readable choice
+]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/bdcdata"]
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["pyogrio.*", "tqdm.*", "dotenv.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: live tests that need real BDC credentials (deselect with '-m \"not integration\"')",
+]
+filterwarnings = ["error::DeprecationWarning"]
