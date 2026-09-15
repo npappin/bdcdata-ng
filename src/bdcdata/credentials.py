@@ -113,34 +113,11 @@ def load_dotenv(path: str | Path = ".env", override: bool = False) -> bool:
         logger.debug("No .env file at %s", env_path)
         return False
 
-    try:
-        from dotenv import load_dotenv as _dotenv_load
-    except ImportError:
-        _load_dotenv_fallback(env_path, override=override)
-    else:
-        _dotenv_load(dotenv_path=env_path, override=override)
+    from dotenv import load_dotenv as _dotenv_load
+    _dotenv_load(dotenv_path=env_path, override=override)
 
     logger.debug("Loaded environment from %s", env_path)
     return True
-
-
-def _load_dotenv_fallback(env_path: Path, override: bool) -> None:
-    """Minimal ``.env`` parser, so ``python-dotenv`` stays optional."""
-    for raw in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[len("export ") :].lstrip()
-        key, sep, value = line.partition("=")
-        if not sep:
-            continue
-        key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-            value = value[1:-1]
-        if override or key not in os.environ:
-            os.environ[key] = value
 
 
 def _resolve_dotenv() -> None:

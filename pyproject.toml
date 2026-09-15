@@ -21,6 +21,7 @@ dependencies = [
   "requests>=2.28",
   "pandas>=2",
   "pyarrow>=12",
+  "python-dotenv",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
