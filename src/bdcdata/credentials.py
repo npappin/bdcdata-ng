@@ -19,11 +19,11 @@ from .exceptions import BdcCredentialsMissing
 
 __all__ = [
     "Credentials",
-    "set_credentials",
-    "get_credentials",
     "clear_credentials",
-    "load_dotenv",
+    "get_credentials",
     "have_credentials",
+    "load_dotenv",
+    "set_credentials",
 ]
 
 logger = logging.getLogger("bdcdata")

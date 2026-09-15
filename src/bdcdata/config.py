@@ -14,12 +14,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 __all__ = [
-    "set_base_url",
     "get_base_url",
-    "set_cache",
     "get_cache_settings",
-    "set_timeout",
     "options",
+    "set_base_url",
+    "set_cache",
+    "set_timeout",
 ]
 
 logger = logging.getLogger("bdcdata")

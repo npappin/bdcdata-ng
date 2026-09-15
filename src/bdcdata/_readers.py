@@ -20,7 +20,7 @@ from .exceptions import BdcDataError, BdcOptionalDependencyError
 if TYPE_CHECKING:
     import pandas as pd
 
-__all__ = ["read_csv_archive", "read_csv_bytes", "read_gis_archive", "list_archive"]
+__all__ = ["list_archive", "read_csv_archive", "read_csv_bytes", "read_gis_archive"]
 
 logger = logging.getLogger("bdcdata")
 
@@ -35,8 +35,7 @@ def _open_archive(data: bytes, source: str) -> zipfile.ZipFile:
         # A plain-text body here usually means the API returned an error page
         # with a 200 status.
         raise BdcDataError(
-            f"{source} did not contain a ZIP archive ({exc}). "
-            f"First bytes: {preview!r}"
+            f"{source} did not contain a ZIP archive ({exc}). First bytes: {preview!r}"
         ) from exc
 
 
@@ -51,24 +50,29 @@ def _pick_member(names: list[str], suffixes: tuple[str, ...], source: str) -> st
 
     Selects by suffix rather than taking the first entry, so a ``__MACOSX``
     folder, a readme, or a sidecar file cannot be mistaken for the data.
+
+    *suffixes* is a priority order: a ``.csv`` always wins over a ``.txt``
+    even when the ``.txt`` sorts first.
     """
-    candidates = [
+    usable = [
         name
         for name in names
-        if name.lower().endswith(suffixes)
-        and not Path(name).name.startswith((".", "__"))
-        and "__MACOSX" not in name
+        if not Path(name).name.startswith((".", "__")) and "__MACOSX" not in name
     ]
-    if not candidates:
-        raise BdcDataError(
-            f"{source} contained no {' or '.join(suffixes)} file. "
-            f"Archive contents: {names}"
-        )
-    if len(candidates) > 1:
-        # Deterministic and explainable: shortest path, then alphabetical.
-        candidates.sort(key=lambda n: (len(n), n))
-        logger.debug("%s has %d candidates; reading %s", source, len(candidates), candidates[0])
-    return candidates[0]
+
+    for suffix in suffixes:
+        candidates = [name for name in usable if name.lower().endswith(suffix)]
+        if not candidates:
+            continue
+        if len(candidates) > 1:
+            # Deterministic and explainable: shortest path, then alphabetical.
+            candidates.sort(key=lambda n: (len(n), n))
+            logger.debug("%s has %d candidates; reading %s", source, len(candidates), candidates[0])
+        return candidates[0]
+
+    raise BdcDataError(
+        f"{source} contained no {' or '.join(suffixes)} file. Archive contents: {names}"
+    )
 
 
 def read_csv_archive(data: bytes, source: str = "download") -> pd.DataFrame:

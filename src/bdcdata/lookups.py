@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     import pandas as pd
 
-__all__ = ["states", "technologies", "challenge_categories"]
+__all__ = ["challenge_categories", "states", "technologies"]
 
 
 # (fips, usps, name)

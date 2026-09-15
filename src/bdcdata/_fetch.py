@@ -17,7 +17,7 @@ from ._readers import read_csv_archive, read_gis_archive
 if TYPE_CHECKING:
     import pandas as pd
 
-__all__ = ["download_frames", "GIS_SHAPEFILE", "GIS_GEOPACKAGE"]
+__all__ = ["GIS_GEOPACKAGE", "GIS_SHAPEFILE", "download_frames", "records"]
 
 logger = logging.getLogger("bdcdata")
 
@@ -42,11 +42,25 @@ def _progress(items: list[Any], enabled: bool, description: str) -> Iterable[Any
     return tqdm(items, desc=description, unit="file")
 
 
+def records(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Return a catalog frame's rows as dictionaries.
+
+    ``DataFrame.to_dict("records")`` is typed as ``list[dict[Hashable, Any]]``
+    because column labels need not be strings. Catalog columns always are, so
+    this narrows the type once here instead of at every call site.
+    """
+    if df.empty:
+        return []
+    return [{str(key): value for key, value in row.items()} for row in df.to_dict("records")]
+
+
 def _warn_if_large(rows: list[dict[str, Any]], description: str) -> None:
     """Log the real size of what is about to be downloaded."""
     total = 0
     for row in rows:
         count = row.get("record_count")
+        if count is None:
+            continue
         try:
             total += int(count)
         except (TypeError, ValueError):

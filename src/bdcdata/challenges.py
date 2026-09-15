@@ -18,14 +18,14 @@ import logging
 from typing import TYPE_CHECKING, Any, Literal
 
 from . import catalog
-from ._fetch import download_frames
+from ._fetch import download_frames, records
 from ._normalize import normalize_states
 from .lookups import _CHALLENGE_CATEGORIES
 
 if TYPE_CHECKING:
     import pandas as pd
 
-__all__ = ["get", "fabric", "fixed", "mobile", "verification", "audit"]
+__all__ = ["audit", "fabric", "fixed", "get", "mobile", "verification"]
 
 logger = logging.getLogger("bdcdata")
 
@@ -55,9 +55,7 @@ def _resolve_category(kind: str, status: str) -> str:
     available = sorted(s for k, s in _BY_KIND_STATUS if k == kind)
     if not available:
         kinds = sorted({k for k, _ in _BY_KIND_STATUS})
-        raise ValueError(
-            f"{kind!r} is not a challenge kind. Valid kinds: {', '.join(kinds)}."
-        )
+        raise ValueError(f"{kind!r} is not a challenge kind. Valid kinds: {', '.join(kinds)}.")
     raise ValueError(
         f"status={status!r} is not available for {kind} challenges. "
         f"Valid: {', '.join(repr(s) for s in available)}. "
@@ -114,7 +112,7 @@ def get(
     files = catalog.challenge_files(release=releases, category=category)
     if not files.empty and states is not None and "state_fips" in files.columns:
         files = files[files["state_fips"].isin(states)]
-    rows = files.to_dict("records") if not files.empty else []
+    rows = records(files)
 
     if not rows:
         logger.warning(

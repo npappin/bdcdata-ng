@@ -9,6 +9,7 @@ The session is built on first use, never at import.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 import time
@@ -31,7 +32,7 @@ from .exceptions import (
     BdcUnprocessableError,
 )
 
-__all__ = ["get_json", "get_bytes", "check_credentials", "reset_session"]
+__all__ = ["check_credentials", "get_bytes", "get_json", "reset_session"]
 
 logger = logging.getLogger("bdcdata")
 
@@ -180,9 +181,7 @@ def _request(
         except requests.RequestException as exc:
             last_error = exc
             if attempt == attempts:
-                raise BdcError(
-                    f"Could not reach {url} after {attempts} attempt(s): {exc}"
-                ) from exc
+                raise BdcError(f"Could not reach {url} after {attempts} attempt(s): {exc}") from exc
             _backoff(attempt, None)
             continue
 
@@ -202,11 +201,10 @@ def _backoff(attempt: int, retry_after: str | None) -> None:
     """Sleep before a retry, honoring ``Retry-After`` when the server sends it."""
     delay = 2.0**attempt
     if retry_after:
-        try:
+        # Retry-After may be an HTTP-date rather than seconds; when it is,
+        # the exponential default stands.
+        with contextlib.suppress(ValueError):
             delay = max(delay, float(retry_after))
-        except ValueError:
-            # Retry-After may be an HTTP-date; the exponential default is fine.
-            pass
     logger.debug("Backing off %.1fs before retry", delay)
     time.sleep(delay)
 

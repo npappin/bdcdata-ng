@@ -23,14 +23,14 @@ if TYPE_CHECKING:
     import pandas as pd
 
 __all__ = [
-    "releases",
     "availability_files",
     "challenge_files",
-    "funding_files",
-    "readme_files",
-    "geographies",
-    "resolve_releases",
     "clear_release_cache",
+    "funding_files",
+    "geographies",
+    "readme_files",
+    "releases",
+    "resolve_releases",
 ]
 
 logger = logging.getLogger("bdcdata")
@@ -188,7 +188,9 @@ def availability_files(
     return _filter_states(combined, state)
 
 
-def challenge_files(release: Any = "latest", *, category: str | None = None, state: Any = None) -> pd.DataFrame:
+def challenge_files(
+    release: Any = "latest", *, category: str | None = None, state: Any = None
+) -> pd.DataFrame:
     """List the challenge files published for one or more releases.
 
     Wraps ``listChallengeData/{as_of_date}``.

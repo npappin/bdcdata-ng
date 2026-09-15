@@ -15,7 +15,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Literal
 
 from . import catalog
-from ._fetch import download_frames
+from ._fetch import download_frames, records
 from ._normalize import normalize_states, normalize_technologies
 
 if TYPE_CHECKING:
@@ -23,10 +23,10 @@ if TYPE_CHECKING:
 
 __all__ = [
     "fixed",
-    "served_unserved",
     "mobile",
     "provider_list",
     "provider_summary",
+    "served_unserved",
     "summary_by_geography",
 ]
 
@@ -51,7 +51,7 @@ def _select(
         df = df[df["state_fips"].isin(states)]
     if technologies is not None and "technology_code" in df.columns:
         df = df[df["technology_code"].isin(technologies)]
-    return df.to_dict("records")
+    return records(df)
 
 
 def _describe(what: str, state: Any, technology: Any, releases: list[str]) -> str:
@@ -309,7 +309,7 @@ def provider_list(
         category="State",
         subcategory="Provider List",
     )
-    rows = files.to_dict("records") if not files.empty else []
+    rows = records(files)
 
     return download_frames(
         rows,
@@ -355,7 +355,7 @@ def provider_summary(
         subcategory="Provider Summary",
         technology_type=technology_type,
     )
-    rows = files.to_dict("records") if not files.empty else []
+    rows = records(files)
 
     return download_frames(
         rows,
@@ -409,7 +409,7 @@ def summary_by_geography(
         subcategory=subcategory,
         technology_type=technology_type,
     )
-    rows = files.to_dict("records") if not files.empty else []
+    rows = records(files)
 
     return download_frames(
         rows,

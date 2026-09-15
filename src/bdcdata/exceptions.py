@@ -8,15 +8,15 @@ without opening the FCC documentation.
 from __future__ import annotations
 
 __all__ = [
-    "BdcError",
     "BdcAuthError",
     "BdcCredentialsMissing",
+    "BdcDataError",
+    "BdcError",
     "BdcNotFoundError",
-    "BdcUnprocessableError",
+    "BdcOptionalDependencyError",
     "BdcRateLimitError",
     "BdcServerError",
-    "BdcDataError",
-    "BdcOptionalDependencyError",
+    "BdcUnprocessableError",
 ]
 
 
@@ -43,8 +43,7 @@ class BdcCredentialsMissing(BdcError):
 
     def __init__(self, message: str | None = None) -> None:
         super().__init__(
-            (message or "No BDC credentials configured.")
-            + "\n\nSet them in one of these ways:\n"
+            (message or "No BDC credentials configured.") + "\n\nSet them in one of these ways:\n"
             "  bdcdata.set_credentials(username='you@example.com', token='...')\n"
             "  export BDC_USERNAME=you@example.com BDC_API_KEY=...\n"
             "  put BDC_USERNAME/BDC_API_KEY in a .env file, then "
@@ -58,7 +57,8 @@ class BdcAuthError(BdcError):
     def __init__(self, message: str = "The FCC rejected your credentials (HTTP 401).") -> None:
         super().__init__(
             message + "\n\nCheck that the username is the email address on your FCC "
-            "account and that the token has not been revoked or regenerated.\n\n" + TOKEN_INSTRUCTIONS
+            "account and that the token has not been revoked or regenerated.\n\n"
+            + TOKEN_INSTRUCTIONS
         )
 
 

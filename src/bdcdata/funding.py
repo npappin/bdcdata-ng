@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from . import _client, catalog
-from ._fetch import download_frames
+from ._fetch import download_frames, records
 from ._normalize import normalize_states
 from ._readers import read_csv_bytes
 from .exceptions import BdcNotFoundError
@@ -31,13 +31,13 @@ if TYPE_CHECKING:
     import pandas as pd
 
 __all__ = [
+    "download_readme",
+    "funded_locations",
     "programs",
     "projects",
-    "unserved_unfunded",
-    "funded_locations",
     "projects_in_geography",
     "readmes",
-    "download_readme",
+    "unserved_unfunded",
 ]
 
 logger = logging.getLogger("bdcdata")
@@ -85,7 +85,7 @@ def _filter_files(
     if states is not None and "state_fips" in df.columns:
         df = df[df["state_fips"].isin(states)]
 
-    return df.to_dict("records")
+    return records(df)
 
 
 def programs(

@@ -17,12 +17,13 @@ Sources
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+import contextlib
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     import pandas as pd
 
-__all__ = ["dtypes_for", "finalize", "COLUMN_TYPES"]
+__all__ = ["COLUMN_TYPES", "dtypes_for", "finalize"]
 
 Kind = Literal["string", "int", "float", "bool", "date"]
 
@@ -135,8 +136,11 @@ _DATE_COLUMNS: tuple[str, ...] = (
     "authorization_date",
     "program_start_date",
     "program_end_date",
-    "as_of_date",
 )
+# Deliberately NOT a date column: `as_of_date` identifies a release and is
+# passed straight back in as `release="2024-06-30"`. Keeping it a string means
+# what catalog.releases() shows is exactly what you can hand to a data
+# function.
 
 COLUMN_TYPES: dict[str, Kind] = {
     **{name: "string" for name in _STRING_COLUMNS},
@@ -160,7 +164,7 @@ def _kind_for(column: str) -> Kind | None:
     return None
 
 
-def dtypes_for(columns: list[str]) -> dict[str, object]:
+def dtypes_for(columns: list[str]) -> dict[str, Any]:
     """Build a ``dtype`` mapping for :func:`pandas.read_csv`.
 
     Booleans are read as small integers and converted afterwards, because the
@@ -170,7 +174,10 @@ def dtypes_for(columns: list[str]) -> dict[str, object]:
     import pandas as pd
     import pyarrow as pa
 
-    mapping: dict[str, object] = {}
+    # Values are pd.ArrowDtype instances. Typed as Any because pandas-stubs
+    # enumerates accepted dtypes as literals and does not include ArrowDtype
+    # in the read_csv/astype overloads.
+    mapping: dict[str, Any] = {}
     for column in columns:
         kind = _kind_for(column)
         if kind == "string":
@@ -194,11 +201,10 @@ def finalize(df: pd.DataFrame) -> pd.DataFrame:
     for column in df.columns:
         kind = _kind_for(column)
         if kind == "bool":
-            try:
+            # On an unexpected encoding, leave the raw values alone rather
+            # than lose them.
+            with contextlib.suppress(TypeError, ValueError, pa.ArrowInvalid):
                 df[column] = df[column].astype(pd.ArrowDtype(pa.bool_()))
-            except (TypeError, ValueError, pa.ArrowInvalid):
-                # Leave the raw values alone rather than lose them.
-                pass
         elif kind == "date":
             converted = pd.to_datetime(df[column], errors="coerce", format="ISO8601")
             df[column] = converted.astype(pd.ArrowDtype(pa.timestamp("ns")))

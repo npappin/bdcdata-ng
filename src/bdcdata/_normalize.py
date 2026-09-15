@@ -21,10 +21,10 @@ from .lookups import (
 )
 
 __all__ = [
+    "as_list",
+    "normalize_release",
     "normalize_states",
     "normalize_technologies",
-    "normalize_release",
-    "as_list",
 ]
 
 Domain = Literal["fixed", "mobile"]
@@ -187,9 +187,7 @@ def normalize_technologies(value: Any, domain: Domain) -> list[int] | None:
 
     valid_codes = {code for code, _, _, dom in _TECHNOLOGIES if dom == domain}
     by_slug = {slug: code for code, slug, _, dom in _TECHNOLOGIES if dom == domain}
-    by_description = {
-        desc.lower(): code for code, _, desc, dom in _TECHNOLOGIES if dom == domain
-    }
+    by_description = {desc.lower(): code for code, _, desc, dom in _TECHNOLOGIES if dom == domain}
 
     out: list[int] = []
     for item in items:

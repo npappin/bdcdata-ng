@@ -53,7 +53,10 @@ try:
 except PackageNotFoundError:  # pragma: no cover - running from a bare checkout
     __version__ = "0.0.0.dev0"
 
-__all__ = [
+# Grouped by purpose rather than sorted alphabetically: this list doubles as
+# the tour of the package, and reading it top to bottom is how you learn what
+# is available.
+__all__ = [  # noqa: RUF022
     "__version__",
     # submodules
     "availability",

@@ -14,14 +14,14 @@ from pathlib import Path
 
 from .config import get_cache_settings
 
-__all__ = ["cache_info", "clear_cache", "read_cached", "write_cached", "cache_key"]
+__all__ = ["cache_info", "cache_key", "clear_cache", "read_cached", "write_cached"]
 
 logger = logging.getLogger("bdcdata")
 
 SUFFIX = ".bdccache"
 """Distinctive suffix so :func:`clear_cache` can never delete a user's own files."""
 
-_SLUG_RE = re.compile(r"[^A-Za-z0-9_.-]+")
+_SLUG_RE = re.compile(r"[^A-Za-z0-9_-]+")
 
 
 def cache_key(url: str, label: str | None = None) -> str:
@@ -39,17 +39,20 @@ def cache_key(url: str, label: str | None = None) -> str:
     return f"{digest}{SUFFIX}"
 
 
-def _entry_path(key: str) -> Path | None:
-    enabled, root = get_cache_settings()
-    if not enabled:
-        return None
-    return root / key
+def _entry_path(key: str) -> Path:
+    """Where *key* lives on disk.
+
+    Deliberately ignores the enabled flag: whether to use the cache at all is
+    decided by the caller, which also honors a per-call ``cache=`` override.
+    Checking the global flag here as well would silently defeat that override.
+    """
+    return get_cache_settings()[1] / key
 
 
 def read_cached(key: str) -> bytes | None:
-    """Return cached bytes for *key*, or ``None`` on a miss or when disabled."""
+    """Return cached bytes for *key*, or ``None`` on a miss."""
     path = _entry_path(key)
-    if path is None or not path.is_file():
+    if not path.is_file():
         return None
     try:
         data = path.read_bytes()
@@ -62,10 +65,11 @@ def read_cached(key: str) -> bytes | None:
 
 
 def write_cached(key: str, data: bytes) -> None:
-    """Store *data* under *key*. Does nothing when the cache is disabled."""
+    """Store *data* under *key*.
+
+    Gating is the caller's job -- see :func:`_entry_path`.
+    """
     path = _entry_path(key)
-    if path is None:
-        return
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         # Write to a temp name then rename, so an interrupted run cannot leave
