@@ -1,0 +1,48 @@
+site_name: bdcdata
+site_description: Work with FCC Broadband Data Collection (BDC) data in pandas.
+site_url: https://npappin.github.io/bdcdata/
+repo_url: https://github.com/npappin/bdcdata
+repo_name: npappin/bdcdata
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Credentials: credentials.md
+  - Data:
+      - Availability: availability.md
+      - Challenges: challenges.md
+      - Funding: funding.md
+  - Migrating from 1.x: migrating-from-v1.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+
+watch:
+  - docs
