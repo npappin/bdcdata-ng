@@ -42,9 +42,8 @@ classifiers = [
 # GeoPackage. pyogrio bundles GDAL, so it stays optional -- users who only
 # touch CSV products should not pay for it.
 mobile = ["pyogrio>=0.7"]
-dotenv = ["python-dotenv>=1.0"]
 progress = ["tqdm>=4.60"]
-all = ["bdcdata[mobile,dotenv,progress]"]
+all = ["bdcdata[mobile,progress]"]
 
 [project.urls]
 Homepage = "https://github.com/npappin/bdcdata"
