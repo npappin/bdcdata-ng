@@ -114,6 +114,7 @@ def load_dotenv(path: str | Path = ".env", override: bool = False) -> bool:
         return False
 
     from dotenv import load_dotenv as _dotenv_load
+
     _dotenv_load(dotenv_path=env_path, override=override)
 
     logger.debug("Loaded environment from %s", env_path)
