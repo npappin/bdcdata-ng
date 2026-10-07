@@ -14,7 +14,6 @@ import logging
 import threading
 import time
 
-# from collections import deque  # only used by the old _RateLimiter
 from collections.abc import Mapping
 from typing import Any
 
@@ -34,7 +33,6 @@ from .exceptions import (
     BdcUnprocessableError,
 )
 
-# __all__ = ["check_credentials", "get_bytes", "get_json", "reset_session"]
 __all__ = ["check_credentials", "get_bytes", "get_json"]
 
 logger = logging.getLogger("bdcdata")
@@ -52,39 +50,6 @@ def _user_agent() -> str:
     return f"bdcdata/{pkg_version} (+https://github.com/npappin/bdcdata)"
 
 
-# class _RateLimiter:
-#     """Sliding-window limiter shared by every request bdcdata makes.
-
-#     The FCC documents 10 calls per minute on each endpoint. Pacing here means
-#     a 50-state pull is slow rather than a wall of 429s.
-#     """
-
-#     def __init__(self, calls: int, period: float) -> None:
-#         self._calls = calls
-#         self._period = period
-#         self._times: deque[float] = deque()
-#         self._lock = threading.Lock()
-
-#     def acquire(self) -> None:
-#         with self._lock:
-#             while True:
-#                 now = time.monotonic()
-#                 while self._times and now - self._times[0] >= self._period:
-#                     self._times.popleft()
-#                 if len(self._times) < self._calls:
-#                     self._times.append(now)
-#                     return
-#                 wait = self._period - (now - self._times[0])
-#                 if wait > 0:
-#                     logger.debug("Rate limit reached; waiting %.1fs", wait)
-#                     time.sleep(wait)
-
-#     def reset(self) -> None:
-#         with self._lock:
-#             self._times.clear()
-
-
-# _limiter = _RateLimiter(RATE_LIMIT_PER_MINUTE, 60.0)
 _session: LimiterSession | None = None
 _session_lock = threading.Lock()
 
@@ -97,19 +62,6 @@ def _get_session() -> LimiterSession:
             _session.headers.update({"User-Agent": _user_agent()})
             logger.debug("HTTP session created")
     return _session
-
-
-# def reset_session() -> None:
-#     """Close the pooled HTTP session and clear the rate-limit window.
-
-#     Mostly useful in tests.
-#     """
-#     global _session
-#     with _session_lock:
-#         if _session is not None:
-#             _session.close()
-#         _session = None
-#     _limiter.reset()
 
 
 def _raise_for_status(response: requests.Response, url: str) -> None:
