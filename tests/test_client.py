@@ -211,27 +211,35 @@ class TestCheckCredentials:
 
 
 class TestRateLimiter:
-    def test_paces_calls_beyond_the_limit(self, monkeypatch):
-        from bdcdata._client import _RateLimiter
+    def test_session_is_rate_limited_to_the_published_rate(self, monkeypatch):
+        from requests_ratelimiter import LimiterSession
+        from requests_ratelimiter.buckets import HostBucketFactory
 
-        clock = {"now": 0.0}
-        slept: list[float] = []
-        monkeypatch.setattr("bdcdata._client.time.monotonic", lambda: clock["now"])
+        monkeypatch.setattr(_client, "_session", None)  # bypass conftest's fast session
+        session = _client._get_session()
+        try:
+            assert isinstance(session, LimiterSession)
+            factory = session.limiter.bucket_factory
+            assert isinstance(factory, HostBucketFactory)
+            [rate] = factory.rates
+            assert (rate.limit, rate.interval) == (10, 60_000)
+        finally:
+            session.close()
 
-        def fake_sleep(seconds):
-            slept.append(seconds)
-            clock["now"] += seconds
+    def test_eleventh_call_in_a_minute_is_held_back(self, monkeypatch, mock_api):
+        import requests
 
-        monkeypatch.setattr("bdcdata._client.time.sleep", fake_sleep)
-
-        limiter = _RateLimiter(calls=10, period=60.0)
-        for _ in range(10):
-            limiter.acquire()
-        assert slept == []
-
-        # The 11th call must wait for the window to roll over.
-        limiter.acquire()
-        assert slept and slept[0] == pytest.approx(60.0)
+        monkeypatch.setattr(_client, "_session", None)
+        session = _client._get_session()
+        session.max_delay = 0.5  # fail fast instead of waiting out the minute
+        mock_api.add(responses.GET, AS_OF_DATES, json={"data": []})
+        try:
+            for _ in range(10):
+                session.get(AS_OF_DATES)
+            with pytest.raises(requests.exceptions.Timeout):
+                session.get(AS_OF_DATES)
+        finally:
+            session.close()
 
     def test_limit_matches_the_published_rate(self):
         from bdcdata.config import RATE_LIMIT_PER_MINUTE

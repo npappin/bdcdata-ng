@@ -26,7 +26,7 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from . import availability, catalog, challenges, funding, lookups  # noqa: E402
 from ._cache import cache_info, clear_cache  # noqa: E402
-from ._client import check_credentials, reset_session  # noqa: E402
+from ._client import check_credentials  # noqa: E402
 from .config import get_cache_settings, set_base_url, set_cache, set_timeout  # noqa: E402
 from .credentials import (  # noqa: E402
     clear_credentials,
@@ -77,7 +77,7 @@ __all__ = [  # noqa: RUF022
     "clear_cache",
     "set_base_url",
     "set_timeout",
-    "reset_session",
+    # "reset_session",
     # exceptions
     "BdcError",
     "BdcAuthError",

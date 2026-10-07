@@ -13,11 +13,13 @@ import contextlib
 import logging
 import threading
 import time
-from collections import deque
+
+# from collections import deque  # only used by the old _RateLimiter
 from collections.abc import Mapping
 from typing import Any
 
 import requests
+from requests_ratelimiter import LimiterSession
 
 from ._cache import cache_key, read_cached, write_cached
 from .config import RATE_LIMIT_PER_MINUTE, get_base_url, options
@@ -32,7 +34,8 @@ from .exceptions import (
     BdcUnprocessableError,
 )
 
-__all__ = ["check_credentials", "get_bytes", "get_json", "reset_session"]
+# __all__ = ["check_credentials", "get_bytes", "get_json", "reset_session"]
+__all__ = ["check_credentials", "get_bytes", "get_json"]
 
 logger = logging.getLogger("bdcdata")
 
@@ -49,64 +52,64 @@ def _user_agent() -> str:
     return f"bdcdata/{pkg_version} (+https://github.com/npappin/bdcdata)"
 
 
-class _RateLimiter:
-    """Sliding-window limiter shared by every request bdcdata makes.
+# class _RateLimiter:
+#     """Sliding-window limiter shared by every request bdcdata makes.
 
-    The FCC documents 10 calls per minute on each endpoint. Pacing here means
-    a 50-state pull is slow rather than a wall of 429s.
-    """
+#     The FCC documents 10 calls per minute on each endpoint. Pacing here means
+#     a 50-state pull is slow rather than a wall of 429s.
+#     """
 
-    def __init__(self, calls: int, period: float) -> None:
-        self._calls = calls
-        self._period = period
-        self._times: deque[float] = deque()
-        self._lock = threading.Lock()
+#     def __init__(self, calls: int, period: float) -> None:
+#         self._calls = calls
+#         self._period = period
+#         self._times: deque[float] = deque()
+#         self._lock = threading.Lock()
 
-    def acquire(self) -> None:
-        with self._lock:
-            while True:
-                now = time.monotonic()
-                while self._times and now - self._times[0] >= self._period:
-                    self._times.popleft()
-                if len(self._times) < self._calls:
-                    self._times.append(now)
-                    return
-                wait = self._period - (now - self._times[0])
-                if wait > 0:
-                    logger.debug("Rate limit reached; waiting %.1fs", wait)
-                    time.sleep(wait)
+#     def acquire(self) -> None:
+#         with self._lock:
+#             while True:
+#                 now = time.monotonic()
+#                 while self._times and now - self._times[0] >= self._period:
+#                     self._times.popleft()
+#                 if len(self._times) < self._calls:
+#                     self._times.append(now)
+#                     return
+#                 wait = self._period - (now - self._times[0])
+#                 if wait > 0:
+#                     logger.debug("Rate limit reached; waiting %.1fs", wait)
+#                     time.sleep(wait)
 
-    def reset(self) -> None:
-        with self._lock:
-            self._times.clear()
+#     def reset(self) -> None:
+#         with self._lock:
+#             self._times.clear()
 
 
-_limiter = _RateLimiter(RATE_LIMIT_PER_MINUTE, 60.0)
-_session: requests.Session | None = None
+# _limiter = _RateLimiter(RATE_LIMIT_PER_MINUTE, 60.0)
+_session: LimiterSession | None = None
 _session_lock = threading.Lock()
 
 
-def _get_session() -> requests.Session:
+def _get_session() -> LimiterSession:
     global _session
     with _session_lock:
         if _session is None:
-            _session = requests.Session()
+            _session = LimiterSession(per_minute=RATE_LIMIT_PER_MINUTE)
             _session.headers.update({"User-Agent": _user_agent()})
             logger.debug("HTTP session created")
-        return _session
+    return _session
 
 
-def reset_session() -> None:
-    """Close the pooled HTTP session and clear the rate-limit window.
+# def reset_session() -> None:
+#     """Close the pooled HTTP session and clear the rate-limit window.
 
-    Mostly useful in tests.
-    """
-    global _session
-    with _session_lock:
-        if _session is not None:
-            _session.close()
-        _session = None
-    _limiter.reset()
+#     Mostly useful in tests.
+#     """
+#     global _session
+#     with _session_lock:
+#         if _session is not None:
+#             _session.close()
+#         _session = None
+#     _limiter.reset()
 
 
 def _raise_for_status(response: requests.Response, url: str) -> None:
@@ -168,7 +171,7 @@ def _request(
     last_error: Exception | None = None
 
     for attempt in range(1, attempts + 1):
-        _limiter.acquire()
+        # _limiter.acquire()
         logger.debug("GET %s params=%s (attempt %d/%d)", url, clean_params, attempt, attempts)
         try:
             response = session.get(

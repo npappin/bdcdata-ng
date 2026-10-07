@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import pytest
 import responses
+from requests_ratelimiter import LimiterSession
 
 import bdcdata
-from bdcdata import catalog, credentials
-from bdcdata._client import reset_session
+from bdcdata import _client, catalog, credentials
 
 
 @pytest.fixture(autouse=True)
@@ -30,18 +30,22 @@ def _isolate(monkeypatch, tmp_path):
     catalog.clear_release_cache()
     bdcdata.set_base_url(None)
     bdcdata.set_cache(False, path=tmp_path / "cache")
-    reset_session()
+    # reset_session()
 
-    # Neutralize the 10-calls-per-minute pacing. It works (TestRateLimiter
-    # builds its own _RateLimiter to prove it), but a test that downloads 60
-    # files would otherwise sleep for six real minutes.
-    monkeypatch.setattr("bdcdata._client._limiter.acquire", lambda: None)
+    # A fresh session per test with pacing effectively off. The real
+    # 10/minute limit is covered by TestRateLimiter; a test that downloads
+    # 60 files would otherwise sleep for six real minutes. limit_statuses=()
+    # stops a mocked 429 from locking the session for the rest of the minute.
+    fast = LimiterSession(per_minute=100_000, limit_statuses=())
+    fast.headers.update({"User-Agent": _client._user_agent()})
+    monkeypatch.setattr("bdcdata._client._session", fast)
 
     yield
 
     credentials.clear_credentials()
     catalog.clear_release_cache()
-    reset_session()
+    # reset_session()
+    fast.close()
 
 
 @pytest.fixture

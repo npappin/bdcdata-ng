@@ -5,7 +5,33 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — unreleased
+## [2.1.0]
+
+### Removed/Changed
+Switch rate limiting to requests-ratelimiter
+
+Replace the hand-rolled sliding-window _RateLimiter with a shared
+LimiterSession (10 calls/minute). The session now paces every request
+it sends, retries included, and backs off for the rest of the window
+after a 429.
+
+Breaking: reset_session() is removed from the public API.
+
+- Comment out _RateLimiter, _limiter, and reset_session in _client.py
+- _get_session() returns a LimiterSession, still guarded by a lock
+- Add requests-ratelimiter as a dependency
+- conftest: give each test a fresh high-limit session in place of
+  reset_session() and the _limiter.acquire patch
+- TestRateLimiter: check the session's configured rate and that the
+  11th call in a minute is held back
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Added
+
+Added uv.lock to the repository.
+
+## [2.0.0] 
 
 A ground-up rewrite. The submodule layout (`bdcdata.availability.fixed()`) is
 unchanged, but arguments, credential handling, and return types all changed.

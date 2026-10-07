@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
 authors = [
-  { name = "W. Nick Pappin", email = "nick.pappin@wsu.edu" },
+  { name = "W. Nick Pappin", email = "npappin@gmail.com },
 ]
 maintainers = [
   { name = "W. Nick Pappin", email = "npappin@gmail.com" },
@@ -22,6 +22,7 @@ dependencies = [
   "pandas>=2",
   "pyarrow>=12",
   "python-dotenv",
+  "requests-ratelimiter",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
