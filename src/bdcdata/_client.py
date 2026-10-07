@@ -13,7 +13,6 @@ import contextlib
 import logging
 import threading
 import time
-
 from collections.abc import Mapping
 from typing import Any
 
