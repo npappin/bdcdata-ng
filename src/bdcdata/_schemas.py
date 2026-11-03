@@ -167,9 +167,7 @@ def _kind_for(column: str, overrides: Mapping[str, Kind] | None = None) -> Kind 
     return None
 
 
-def dtypes_for(
-    columns: list[str], overrides: Mapping[str, Kind] | None = None
-) -> dict[str, Any]:
+def dtypes_for(columns: list[str], overrides: Mapping[str, Kind] | None = None) -> dict[str, Any]:
     """Build a ``dtype`` mapping for :func:`pandas.read_csv`.
 
     *overrides* replaces the registered kind for specific columns, for the
