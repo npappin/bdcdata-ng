@@ -8,11 +8,12 @@ behavior, and error messages are identical everywhere.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
 from . import _client
 from ._readers import read_csv_archive, read_gis_archive
+from ._schemas import Kind
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -92,6 +93,7 @@ def download_frames(
     progress: bool = False,
     gis: bool = False,
     extra_columns: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    overrides: Mapping[str, Kind] | None = None,
     username: str | None = None,
     token: str | None = None,
 ) -> pd.DataFrame:
@@ -111,6 +113,9 @@ def download_frames(
         Called per row; the returned mapping is added as columns to that
         file's frame. Used to stamp on ``release``, ``state_fips``, and so on,
         which the files themselves do not always carry.
+    overrides:
+        Column kinds that replace the registry in :mod:`bdcdata._schemas`
+        for these files only.
 
     Returns
     -------
@@ -146,7 +151,7 @@ def download_frames(
             username=username,
             token=token,
         )
-        df = reader(data, source=source)
+        df = reader(data, source=source, overrides=overrides)
 
         if extra_columns is not None:
             for column, value in extra_columns(row).items():

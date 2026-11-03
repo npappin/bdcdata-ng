@@ -208,6 +208,24 @@ class TestFundedLocations:
 
         assert mock_api.calls[-1].request.url.endswith("/2")
 
+    def test_multi_technology_rows_are_kept_as_strings(self, mock_api):
+        # Locations funded for several technologies list them joined with ";".
+        mock_api.add(
+            responses.GET,
+            FUNDING_LIST_URL,
+            json=api_payload([funding_row(1, "Funded Locations State", state_fips="53")]),
+        )
+        mock_api.add(
+            responses.GET,
+            f"{FUNDING_DOWNLOAD_URL}/1",
+            body=make_csv_zip("location_id,technology\n1357135307,50\n1357135308,10;40;50\n"),
+            status=200,
+        )
+
+        df = bdcdata.funding.funded_locations(state="WA")
+
+        assert df["technology"].tolist() == ["50", "10;40;50"]
+
     def test_missing_export_warns(self, mock_api, caplog):
         mock_api.add(responses.GET, FUNDING_LIST_URL, json=api_payload([]))
 

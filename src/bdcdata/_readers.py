@@ -11,10 +11,11 @@ import io
 import logging
 import tempfile
 import zipfile
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ._schemas import dtypes_for, finalize
+from ._schemas import Kind, dtypes_for, finalize
 from .exceptions import BdcDataError, BdcOptionalDependencyError
 
 if TYPE_CHECKING:
@@ -75,11 +76,15 @@ def _pick_member(names: list[str], suffixes: tuple[str, ...], source: str) -> st
     )
 
 
-def read_csv_archive(data: bytes, source: str = "download") -> pd.DataFrame:
+def read_csv_archive(
+    data: bytes,
+    source: str = "download",
+    overrides: Mapping[str, Kind] | None = None,
+) -> pd.DataFrame:
     """Read the CSV inside a downloaded ZIP archive.
 
-    Column types come from :mod:`bdcdata._schemas`; anything unrecognized is
-    inferred with the pyarrow backend.
+    Column types come from :mod:`bdcdata._schemas`, adjusted by *overrides*;
+    anything unrecognized is inferred with the pyarrow backend.
     """
     import pandas as pd
 
@@ -93,7 +98,7 @@ def read_csv_archive(data: bytes, source: str = "download") -> pd.DataFrame:
         # from any single file layout.
         with archive.open(member) as handle:
             header = pd.read_csv(handle, nrows=0)
-        dtypes = dtypes_for([str(c) for c in header.columns])
+        dtypes = dtypes_for([str(c) for c in header.columns], overrides)
 
         with archive.open(member) as handle:
             try:
@@ -101,7 +106,7 @@ def read_csv_archive(data: bytes, source: str = "download") -> pd.DataFrame:
             except (ValueError, pd.errors.ParserError) as exc:
                 raise BdcDataError(f"Could not parse {member} from {source}: {exc}") from exc
 
-    return finalize(df)
+    return finalize(df, overrides)
 
 
 def read_csv_bytes(data: bytes, source: str = "download") -> pd.DataFrame:
@@ -128,7 +133,11 @@ def read_csv_bytes(data: bytes, source: str = "download") -> pd.DataFrame:
     return finalize(df)
 
 
-def read_gis_archive(data: bytes, source: str = "download") -> pd.DataFrame:
+def read_gis_archive(
+    data: bytes,
+    source: str = "download",
+    overrides: Mapping[str, Kind] | None = None,
+) -> pd.DataFrame:
     """Read the attribute table of the GIS file inside a downloaded archive.
 
     Geometry is deliberately **not** read. The mobile coverage files identify
@@ -168,7 +177,7 @@ def read_gis_archive(data: bytes, source: str = "download") -> pd.DataFrame:
             raise BdcDataError(f"Could not read {member} from {source}: {exc}") from exc
 
     df = pd.DataFrame(table)
-    dtypes = dtypes_for([str(c) for c in df.columns])
+    dtypes = dtypes_for([str(c) for c in df.columns], overrides)
     for column, dtype in dtypes.items():
         try:
             df[column] = df[column].astype(dtype)
@@ -176,4 +185,4 @@ def read_gis_archive(data: bytes, source: str = "download") -> pd.DataFrame:
             # Driver-supplied types are usually right already; never lose data
             # to a failed cast.
             logger.debug("Left %s as %s", column, df[column].dtype)
-    return finalize(df)
+    return finalize(df, overrides)

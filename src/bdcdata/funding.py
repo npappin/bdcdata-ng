@@ -259,6 +259,10 @@ def funded_locations(
         cache=cache,
         progress=progress,
         extra_columns=_stamp,
+        # Elsewhere `technology` is a single integer code, but here a location
+        # served by several technologies gets them joined with ";"
+        # (e.g. "10;40;50"). Keep it a string so those rows survive.
+        overrides={"technology": "string"},
     )
 
 

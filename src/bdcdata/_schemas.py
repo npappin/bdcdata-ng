@@ -18,6 +18,7 @@ Sources
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
@@ -155,8 +156,10 @@ COLUMN_TYPES: dict[str, Kind] = {
 _FLOAT_SUFFIXES = ("_pct",)
 
 
-def _kind_for(column: str) -> Kind | None:
+def _kind_for(column: str, overrides: Mapping[str, Kind] | None = None) -> Kind | None:
     name = column.strip().lower()
+    if overrides and name in overrides:
+        return overrides[name]
     if name in COLUMN_TYPES:
         return COLUMN_TYPES[name]
     if name.endswith(_FLOAT_SUFFIXES):
@@ -164,8 +167,14 @@ def _kind_for(column: str) -> Kind | None:
     return None
 
 
-def dtypes_for(columns: list[str]) -> dict[str, Any]:
+def dtypes_for(
+    columns: list[str], overrides: Mapping[str, Kind] | None = None
+) -> dict[str, Any]:
     """Build a ``dtype`` mapping for :func:`pandas.read_csv`.
+
+    *overrides* replaces the registered kind for specific columns, for the
+    rare export that reuses a name with a different shape (see
+    :func:`bdcdata.funding.funded_locations`).
 
     Booleans are read as small integers and converted afterwards, because the
     files store them as ``0``/``1`` rather than ``True``/``False``. Dates are
@@ -179,7 +188,7 @@ def dtypes_for(columns: list[str]) -> dict[str, Any]:
     # in the read_csv/astype overloads.
     mapping: dict[str, Any] = {}
     for column in columns:
-        kind = _kind_for(column)
+        kind = _kind_for(column, overrides)
         if kind == "string":
             mapping[column] = pd.ArrowDtype(pa.string())
         elif kind == "int":
@@ -193,13 +202,13 @@ def dtypes_for(columns: list[str]) -> dict[str, Any]:
     return mapping
 
 
-def finalize(df: pd.DataFrame) -> pd.DataFrame:
+def finalize(df: pd.DataFrame, overrides: Mapping[str, Kind] | None = None) -> pd.DataFrame:
     """Convert 0/1 integer flags to booleans and date strings to timestamps."""
     import pandas as pd
     import pyarrow as pa
 
     for column in df.columns:
-        kind = _kind_for(column)
+        kind = _kind_for(column, overrides)
         if kind == "bool":
             # On an unexpected encoding, leave the raw values alone rather
             # than lose them.

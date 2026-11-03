@@ -72,8 +72,8 @@ def _stamp(row: dict[str, Any]) -> dict[str, Any]:
     extra: dict[str, Any] = {}
     if row.get("release") is not None:
         extra["release"] = row["release"]
-    if row.get("state_fips") is not None:
-        extra["state_fips"] = row["state_fips"]
+    # if row.get("state_fips") is not None:
+    #     extra["state_fips"] = row["state_fips"]
     return extra
 
 
